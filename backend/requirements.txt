@@ -1,4 +1,8 @@
 fastapi
 uvicorn
-anthropic
+groq
+orjson
 python-dotenv
+newspaper3k
+lxml
+lxml_html_clean
