@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "./supabase";
 import Auth from "./Auth";
 import Profile from "./Profile";
+import SharedExercise from "./SharedExercise";
 
 function shuffle(arr) {
   return [...arr].sort(() => Math.random() - 0.5);
@@ -26,7 +27,15 @@ export default function OuiCan() {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [shareUrl, setShareUrl] = useState(null);
+  const [shareLoading, setShareLoading] = useState(false);
 
+
+  const [sharedId, setSharedId] = useState(() => {
+      const path = window.location.pathname;
+      const match = path.match(/\/share\/([a-f0-9-]+)/);
+      return match ? match[1] : null;
+  });
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
@@ -80,6 +89,45 @@ async function generate() {
   }
 }
 
+async function shareExercise() {
+  setShareLoading(true);
+  try {
+    const body = exerciseType === "qcm" ? {
+      exercise_type: "qcm",
+      passage: ex.passage,
+      question: ex.question,
+      options: ex.options,
+      answer: ex.answer,
+      explanation: ex.explanation,
+      level: profile.level,
+      topic: sessionKw || sessionSourceUrl,
+    } : {
+      exercise_type: "vraifaux",
+      passage: ex.passage,
+      statement: ex.statement,
+      answer: ex.answer,
+      justification: ex.justification,
+      explanation: ex.explanation,
+      level: profile.level,
+      topic: sessionKw || sessionSourceUrl,
+    };
+
+    const res = await fetch("https://ouican.onrender.com/share", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    const url = `https://ouican.pages.dev/share/${data.id}`;
+    setShareUrl(url);
+    navigator.clipboard.writeText(url);
+  } catch(e) {
+    console.error(e);
+  } finally {
+    setShareLoading(false);
+  }
+}
+
   function pick(letter) {
     setChosen(letter);
     setScore(s => ({ correct: s.correct + (letter === ex.answer ? 1 : 0), total: s.total + 1 }));
@@ -95,6 +143,7 @@ async function generate() {
   function resetAll() {
     setKw(""); setUrl(""); setSourceUrl(""); setEx(null);
     setChosen(null); setVfAnswer(null); setPhase("input");
+    setShareUrl(""); setShareLoading(false);
     setScore({ correct: 0, total: 0 });
     setSessionKw(""); setSessionSourceUrl("");
   }
@@ -153,6 +202,7 @@ async function generate() {
   };
 
   if (authLoading) return null;
+  if (sharedId) return <SharedExercise id={sharedId} />;
   if (!user) return <Auth />;
   if (!profile) return <Profile user={user} onSave={(p) => setProfile(p)} />;
   
@@ -259,7 +309,7 @@ async function generate() {
               )}
             </div>
             <div style={s.kicker}>
-              {exerciseType === "vraifaux" ? "Vrai / Faux · B2" : "Compréhension écrite · B2"}
+              {exerciseType === "vraifaux" ? "Vrai / Faux " : "Compréhension écrite"}
             </div>
             <h1 style={s.headline}>
               {sourceUrl ? (
@@ -297,6 +347,21 @@ async function generate() {
                   <div style={s.feedback}>
                     <div style={{ fontWeight: 700, color: chosen === ex.answer ? "#3B6D11" : "#993556", marginBottom: 10, fontSize: 15, letterSpacing: 1 }}>
                       {chosen === ex.answer ? "✓ EXCELLENT !" : "✗ ANALYSE À REVOIR..."}
+                    </div>
+                    <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid #EEE" }}>
+                      {shareUrl ? (
+                        <div style={{ fontSize: 13, color: "#3B6D11", fontFamily: "'Libre Baskerville', serif" }}>
+                          ✓ Lien copié ! <span style={{ color: "#999" }}>{shareUrl}</span>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={shareExercise}
+                          disabled={shareLoading}
+                          style={{ background: "none", border: "0.5px solid #EEE", borderRadius: 8, padding: "8px 14px", fontSize: 13, cursor: "pointer", color: "#666" }}
+                        >
+                          {shareLoading ? "..." : "🔗 Partager cette question"}
+                        </button>
+                      )}
                     </div>
                     <div style={{ fontStyle: "italic" }}>{ex.explanation}</div>
                     <button style={{ ...s.mainBtn, marginTop: 24 }} onClick={nextQuestion}> Prochain sujet </button>
