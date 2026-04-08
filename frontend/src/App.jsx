@@ -150,6 +150,8 @@ async function shareExercise() {
 
   async function nextQuestion() {
     setEx(null); setChosen(null); setVfAnswer(null);
+    setShareUrl(null);
+    setShareLoading(false);
     setPhase("loading");
     const randomType = Math.random() > 0.5 ? "qcm" : "vraifaux";
     setExerciseType(randomType);
@@ -325,7 +327,7 @@ async function shareExercise() {
 
             <div style={s.passage}>{ex.passage}</div>
 
-            {/* ── QCM ── */}
+{/* ── QCM ── */}
             {exerciseType === "qcm" && (
               <>
                 <div style={{ marginBottom: 24, display: "flex", gap: 12, alignItems: "flex-start" }}>
@@ -354,17 +356,13 @@ async function shareExercise() {
                           ✓ Lien copié ! <span style={{ color: "#999" }}>{shareUrl}</span>
                         </div>
                       ) : (
-                        <button
-                          onClick={shareExercise}
-                          disabled={shareLoading}
-                          style={{ background: "none", border: "0.5px solid #EEE", borderRadius: 8, padding: "8px 14px", fontSize: 13, cursor: "pointer", color: "#666" }}
-                        >
+                        <button onClick={shareExercise} disabled={shareLoading} style={{ background: "none", border: "0.5px solid #EEE", borderRadius: 8, padding: "8px 14px", fontSize: 13, cursor: "pointer", color: "#666" }}>
                           {shareLoading ? "..." : "🔗 Partager cette question"}
                         </button>
                       )}
                     </div>
                     <div style={{ fontStyle: "italic" }}>{ex.explanation}</div>
-                    <button style={{ ...s.mainBtn, marginTop: 24 }} onClick={nextQuestion}> Prochain sujet </button>
+                    <button style={{ ...s.mainBtn, marginTop: 24 }} onClick={nextQuestion}>Prochain sujet</button>
                   </div>
                 )}
               </>
@@ -377,24 +375,10 @@ async function shareExercise() {
                   <div style={{ fontSize: 11, fontWeight: 700, color: "#993556", textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 10 }}>Affirmation</div>
                   <div style={{ fontFamily: "'Libre Baskerville', serif", fontSize: 17, lineHeight: 1.6, fontWeight: 500 }}>{ex.statement}</div>
                 </div>
-
                 <div style={{ display: "flex", gap: 12, marginBottom: 20 }}>
-                  <button
-                    disabled={phase === "result"}
-                    onClick={() => pickVF("vrai")}
-                    style={s.vfBtn(vfAnswer === "vrai", phase === "result", phase === "result" && ex.answer === "vrai")}
-                  >
-                    ✓ Vrai
-                  </button>
-                  <button
-                    disabled={phase === "result"}
-                    onClick={() => pickVF("faux")}
-                    style={s.vfBtn(vfAnswer === "faux", phase === "result", phase === "result" && ex.answer === "faux")}
-                  >
-                    ✗ Faux
-                  </button>
+                  <button disabled={phase === "result"} onClick={() => pickVF("vrai")} style={s.vfBtn(vfAnswer === "vrai", phase === "result", phase === "result" && ex.answer === "vrai")}>✓ Vrai</button>
+                  <button disabled={phase === "result"} onClick={() => pickVF("faux")} style={s.vfBtn(vfAnswer === "faux", phase === "result", phase === "result" && ex.answer === "faux")}>✗ Faux</button>
                 </div>
-
                 {phase === "result" && (
                   <div style={s.feedback}>
                     <div style={{ fontWeight: 700, color: vfAnswer === ex.answer ? "#3B6D11" : "#993556", marginBottom: 10, fontSize: 15, letterSpacing: 1 }}>
@@ -404,7 +388,18 @@ async function shareExercise() {
                     <div style={{ fontSize: 13, color: "#888", borderTop: "1px solid #EEE", paddingTop: 12 }}>
                       <span style={{ fontWeight: 700, color: "#555" }}>Idée clé : </span>{ex.justification}
                     </div>
-                    <button style={{ ...s.mainBtn, marginTop: 24 }} onClick={nextQuestion}> Prochain sujet </button>
+                    <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid #EEE" }}>
+                      {shareUrl ? (
+                        <div style={{ fontSize: 13, color: "#3B6D11", fontFamily: "'Libre Baskerville', serif" }}>
+                          ✓ Lien copié ! <span style={{ color: "#999" }}>{shareUrl}</span>
+                        </div>
+                      ) : (
+                        <button onClick={shareExercise} disabled={shareLoading} style={{ background: "none", border: "0.5px solid #EEE", borderRadius: 8, padding: "8px 14px", fontSize: 13, cursor: "pointer", color: "#666" }}>
+                          {shareLoading ? "..." : "🔗 Partager cette question"}
+                        </button>
+                      )}
+                    </div>
+                    <button style={{ ...s.mainBtn, marginTop: 24 }} onClick={nextQuestion}>Prochain sujet</button>
                   </div>
                 )}
               </>
