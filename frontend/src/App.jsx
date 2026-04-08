@@ -29,6 +29,9 @@ export default function OuiCan() {
   const [authLoading, setAuthLoading] = useState(true);
   const [shareUrl, setShareUrl] = useState(null);
   const [shareLoading, setShareLoading] = useState(false);
+  const [wordCard, setWordCard] = useState(null); // {word, definition, example, loading}
+  const [savedWords, setSavedWords] = useState([]);
+  const [streak, setStreak] = useState(0);
 
 
   const [sharedId, setSharedId] = useState(() => {
@@ -52,8 +55,9 @@ export default function OuiCan() {
 
 
 async function loadProfile(userId) {
-  const { data } = await supabase.from("profiles").select("nickname, level").eq("id", userId).single();
+  const { data } = await supabase.from("profiles").select("nickname, level, streak, last_activity").eq("id", userId).single();
   if (data?.nickname && data?.level) setProfile(data);
+  if (data?.streak) setStreak(data.streak);
   setAuthLoading(false);
 }
 
@@ -87,6 +91,64 @@ async function generate() {
   } catch (e) {
     setErr(e.message); setPhase("error");
   }
+}
+
+async function explainWord(word) {
+  setWordCard({ word, definition: null, example: null, loading: true });
+  try {
+    const res = await fetch("https://ouican.onrender.com/explain-word", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ word: word.replace(/[.,!?;:«»""]/g, "").trim(), level: profile.level })
+    });
+    const data = await res.json();
+    setWordCard({ word, definition: data.definition, example: data.example, loading: false });
+  } catch(e) {
+    setWordCard(null);
+  }
+}
+
+async function saveWord() {
+  if (!wordCard || wordCard.loading) return;
+  
+  let topic = sessionKw;
+  if (!topic && sessionSourceUrl) {
+    try {
+      topic = new URL(sessionSourceUrl).hostname.replace("www.", "");
+    } catch {
+      topic = sessionSourceUrl;
+    }
+  }
+
+  await supabase.from("vocabulary").insert({
+    user_id: user.id,
+    word: wordCard.word,
+    definition: wordCard.definition,
+    example: wordCard.example,
+    level: profile.level,
+    topic: topic || "Divers",
+  });
+  setSavedWords(sw => [...sw, wordCard.word]);
+}
+
+async function updateStreak() {
+  const today = new Date().toISOString().split("T")[0];
+  const { data } = await supabase.from("profiles").select("streak, last_activity").eq("id", user.id).single();
+  
+  if (data.last_activity === today) return; // 今天已经做过了
+  
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = yesterday.toISOString().split("T")[0];
+  
+  const newStreak = data.last_activity === yesterdayStr ? (data.streak || 0) + 1 : 1;
+  
+  await supabase.from("profiles").update({
+    streak: newStreak,
+    last_activity: today,
+  }).eq("id", user.id);
+  
+  setStreak(newStreak);
 }
 
 async function shareExercise() {
@@ -132,12 +194,14 @@ async function shareExercise() {
     setChosen(letter);
     setScore(s => ({ correct: s.correct + (letter === ex.answer ? 1 : 0), total: s.total + 1 }));
     setPhase("result");
+    updateStreak();
   }
 
   function pickVF(answer) {
     setVfAnswer(answer);
     setScore(s => ({ correct: s.correct + (answer === ex.answer ? 1 : 0), total: s.total + 1 }));
     setPhase("result");
+    updateStreak();
   }
 
   function resetAll() {
@@ -206,8 +270,8 @@ async function shareExercise() {
   if (authLoading) return null;
   if (sharedId) return <SharedExercise id={sharedId} />;
   if (!user) return <Auth />;
-  if (!profile) return <Profile user={user} onSave={(p) => setProfile(p)} />;
-  
+  if (!profile) return <Profile user={user} onSave={(p) => setProfile(p)} onDeleteWord={(word) => setSavedWords(sw => sw.filter(w => w !== word))} />;
+ 
   return (
     <div style={s.container}>
       <div style={s.wrap}>
@@ -223,6 +287,7 @@ async function shareExercise() {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
           <span style={{ fontSize: 14, color: "#666", fontFamily: "'Libre Baskerville', serif" }}>
             Bonjour, <strong>{profile.nickname}</strong> · {profile.level}
+            {streak > 0 && <span style={{ marginLeft: 10, color: "#E8630A", fontWeight: 700 }}>🔥 {streak}</span>}
           </span>
           <div style={{ display: "flex", gap: 12 }}>
             <button onClick={() => setProfile(null)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#999" }}>
@@ -325,7 +390,23 @@ async function shareExercise() {
               <span>{profile?.level} PREMIUM</span>
             </div>
 
-            <div style={s.passage}>{ex.passage}</div>
+            <div style={s.passage}>
+              {ex.passage.split(/(\s+)/).map((token, i) => {
+                const clean = token.replace(/[.,!?;:«»""]/g, "").trim();
+                if (!clean) return <span key={i}>{token}</span>;
+                return (
+                  <span
+                    key={i}
+                    onClick={() => explainWord(clean)}
+                    style={{ cursor: "pointer", borderBottom: "1px dotted #999", transition: "0.1s" }}
+                    onMouseEnter={e => e.target.style.color = "#123524"}
+                    onMouseLeave={e => e.target.style.color = ""}
+                  >
+                    {token}
+                  </span>
+                );
+              })}
+            </div>
 
 {/* ── QCM ── */}
             {exerciseType === "qcm" && (
@@ -404,6 +485,43 @@ async function shareExercise() {
                 )}
               </>
             )}
+          </div>
+        )}
+        {wordCard && (
+          <div
+            onClick={() => setWordCard(null)}
+            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.3)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 100, padding: 20 }}
+          >
+            <div
+              onClick={e => e.stopPropagation()}
+              style={{ background: "#FFF", borderRadius: 16, padding: 24, width: "100%", maxWidth: 600, boxShadow: "0 -4px 40px rgba(0,0,0,0.1)" }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 700, color: "#123524" }}>
+                  {wordCard.word}
+                </span>
+                <button onClick={() => setWordCard(null)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, color: "#999" }}>✕</button>
+              </div>
+              {wordCard.loading ? (
+                <div style={{ color: "#999", fontStyle: "italic", fontFamily: "'Libre Baskerville', serif" }}>Définition en cours...</div>
+              ) : (
+                <>
+                  <div style={{ fontFamily: "'Libre Baskerville', serif", fontSize: 15, lineHeight: 1.7, color: "#333", marginBottom: 12 }}>
+                    {wordCard.definition}
+                  </div>
+                  <div style={{ fontSize: 13, color: "#888", fontStyle: "italic", borderLeft: "3px solid #EAE2D5", paddingLeft: 12, marginBottom: 20 }}>
+                    {wordCard.example}
+                  </div>
+                  <button
+                    onClick={saveWord}
+                    disabled={savedWords.includes(wordCard.word)}
+                    style={{ background: savedWords.includes(wordCard.word) ? "#F0EDE7" : "#123524", color: savedWords.includes(wordCard.word) ? "#999" : "#FFF", border: "none", borderRadius: 8, padding: "10px 20px", fontSize: 14, cursor: savedWords.includes(wordCard.word) ? "default" : "pointer", fontWeight: 700 }}
+                  >
+                    {savedWords.includes(wordCard.word) ? "✓ Sauvegardé" : "💾 Sauvegarder"}
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         )}
       </div>

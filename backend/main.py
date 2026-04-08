@@ -284,11 +284,8 @@ class WordRequest(BaseModel):
 
 @app.post("/explain-word")
 async def explain_word(req: WordRequest):
-    system = f"""Tu es un professeur de FLE. Explique le mot en français adapté au niveau {req.level}.
-Réponds UNIQUEMENT avec un objet JSON valide, sans markdown ni backticks.
-Structure exacte :
-{{"definition":"définition courte et claire","example":"une phrase exemple naturelle avec le mot"}}
-Niveau {req.level} : adapte le vocabulaire de l'explication au niveau de l'apprenant."""
+    system = f"""Professeur FLE. Explique le mot en français, niveau {req.level}. Langage inclusif (personnes/on, pas de genre).
+JSON uniquement : {{"definition":"...","example":"..."}}"""
 
     result = call_groq(system, f"Explique le mot : {req.word}")
     return result
