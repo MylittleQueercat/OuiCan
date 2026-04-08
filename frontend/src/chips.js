@@ -90,7 +90,6 @@ export const ALL_CHIPS = [
   "burn-out militant",
   "Handiparentalité",
   "utopie sociale",
-  "Polyamour éthique",
   "réduction des risques drogues",
   "FALC accessibilité",
   "queer art militant",

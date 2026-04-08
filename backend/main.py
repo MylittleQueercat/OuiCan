@@ -54,29 +54,26 @@ def get_explanation_note(level: str) -> str:
 def get_system_qcm(level: str) -> str:
     desc = LEVEL_DESC.get(level, "avancé")
     explanation_note = get_explanation_note(level)
-    return f"""Tu es un professeur de FLE expert en DELF/DALF. Crée un exercice de compréhension écrite de niveau {level} à partir d'un sujet ou d'un texte.
-Niveau {level} signifie : {desc}.
-Réponds UNIQUEMENT avec un objet JSON valide, sans markdown ni backticks.
-Structure exacte :
-{{"passage":"texte STRICTEMENT adapté au niveau {level}, longueur selon le niveau","question":"question de compréhension adaptée au niveau {level}","options":{{"A":"option A","B":"option B","C":"option C","D":"option D"}},"answer":"A ou B ou C ou D","explanation":"explication {explanation_note}"}}"""
+    variety_note = (
+        "Varie le type de question (cause, but, sentiment, définition...). "
+        "Options A/B/C/D : jamais les mots exacts du passage, toujours des synonymes ou reformulations."
+    )
+    return f"""Tu es un prof de FLE DELF/DALF. Crée un QCM niveau {level}.
+{level} : {desc}
+{variety_note}
+JSON uniquement, pas de markdown :
+{{"passage":"...","question":"...","options":{{"A":"...","B":"...","C":"...","D":"..."}},"answer":"A/B/C/D","explanation":"explication {explanation_note}"}}"""
 
 
 def get_system_vrai_faux(level: str) -> str:
     desc = LEVEL_DESC.get(level, "avancé")
     explanation_note = get_explanation_note(level)
-    return f"""Tu es un professeur de FLE expert en DELF/DALF. Crée un exercice Vrai/Faux de niveau {level}.
-Niveau {level} signifie : {desc}.
-Réponds UNIQUEMENT avec un objet JSON valide, sans markdown ni backticks.
-Structure exacte :
-{{"passage":"texte STRICTEMENT adapté au niveau {level}, longueur selon le niveau","statement":"une affirmation sur le texte, vraie ou fausse, adaptée au niveau {level}","answer":"vrai ou faux","justification":"l'idée du texte qui justifie la réponse","explanation":"explication {explanation_note}"}}
-Adapte la complexité au niveau {level} : {desc}."""
-
-
-SYSTEM_EVALUATE = """Tu es un correcteur expert en DELF/DALF. Tu évalues la justification d'un apprenant pour un exercice Vrai/Faux.
-Réponds UNIQUEMENT avec un objet JSON valide, sans markdown ni backticks.
-Structure exacte :
-{"correct":true ou false,"score":"0/2 ou 1/2 ou 2/2","feedback":"commentaire bienveillant et précis"}
-Critères : 2/2 = bonne reformulation sans copier ; 1/2 = idée partiellement juste ; 0/2 = hors sujet."""
+    vf_note = "L'affirmation : jamais les mots exacts du passage, reformule avec synonymes."
+    return f"""Tu es un prof de FLE DELF/DALF. Crée un Vrai/Faux niveau {level}.
+{level} : {desc}
+{vf_note}
+JSON uniquement, pas de markdown :
+{{"passage":"...","statement":"...","answer":"vrai/faux","justification":"...","explanation":"explication {explanation_note}"}}"""
 
 # ── Models ────────────────────────────────────────────────────────────────────
 
@@ -140,7 +137,7 @@ class ShareRequest(BaseModel):
 def call_groq(system: str, user: str, retry: bool = True) -> dict:
     try:
         message = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="llama-3.1-8b-instant",
             messages=[
                 {"role": "system", "content": system},
                 {"role": "user", "content": user}
