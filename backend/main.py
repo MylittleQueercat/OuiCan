@@ -289,3 +289,7 @@ JSON uniquement : {{"definition":"...","example":"..."}}"""
 
     result = call_groq(system, f"Explique le mot : {req.word}")
     return result
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=int(os.getenv("PORT", 8000)))
