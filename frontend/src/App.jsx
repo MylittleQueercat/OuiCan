@@ -25,11 +25,13 @@ export default function OuiCan() {
   const [sessionSourceUrl, setSessionSourceUrl] = useState("");
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       if (session?.user) loadProfile(session.user.id);
+      else setAuthLoading(false);
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
@@ -43,6 +45,7 @@ export default function OuiCan() {
 async function loadProfile(userId) {
   const { data } = await supabase.from("profiles").select("nickname, level").eq("id", userId).single();
   if (data?.nickname && data?.level) setProfile(data);
+  setAuthLoading(false);
 }
 
 async function generate() {
@@ -149,10 +152,10 @@ async function generate() {
     feedback: { marginTop: 20, padding: "24px", borderRadius: "12px", backgroundColor: "#F8F8F8", borderLeft: "4px solid #123524", fontFamily: "'Libre Baskerville', serif", lineHeight: 1.7, color: "#444" },
   };
 
+  if (authLoading) return null;
   if (!user) return <Auth />;
   if (!profile) return <Profile user={user} onSave={(p) => setProfile(p)} />;
   
-
   return (
     <div style={s.container}>
       <div style={s.wrap}>
@@ -267,7 +270,7 @@ async function generate() {
             </h1>
             <div style={{ borderTop: "2.5px solid #1A1A1A", borderBottom: "1px solid #1A1A1A", padding: "6px 0", marginBottom: 25, fontSize: 11, display: "flex", justifyContent: "space-between", fontWeight: 700, color: "#333" }}>
               <span>OUICAN · {new Date().toLocaleDateString('fr-FR')}</span>
-              <span>B2 PREMIUM</span>
+              <span>{profile?.level} PREMIUM</span>
             </div>
 
             <div style={s.passage}>{ex.passage}</div>

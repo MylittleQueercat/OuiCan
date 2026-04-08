@@ -10,6 +10,44 @@ import os
 import traceback
 from dotenv import load_dotenv
 import newspaper
+from supabase import create_client
+
+supabase = create_client(
+    os.getenv("SUPABASE_URL"),
+    os.getenv("SUPABASE_SERVICE_KEY")
+)
+
+class ShareRequest(BaseModel):
+    exercise_type: str
+    passage: str
+    question: str = None
+    options: dict = None
+    answer: str
+    explanation: str
+    statement: str = None
+    justification: str = None
+    level: str = None
+    topic: str = None
+
+@app.post("/share")
+def share_exercise(req: ShareRequest):
+    try:
+        result = supabase.table("shared_exercises").insert({
+            "exercise_type": req.exercise_type,
+            "passage": req.passage,
+            "question": req.question,
+            "options": req.options,
+            "answer": req.answer,
+            "explanation": req.explanation,
+            "statement": req.statement,
+            "justification": req.justification,
+            "level": req.level,
+            "topic": req.topic,
+        }).execute()
+        return {"id": result.data[0]["id"]}
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 load_dotenv()
 
@@ -29,19 +67,33 @@ client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 # ── Prompts ──────────────────────────────────────────────────────────────────
 
+LEVEL_DESC = {
+    "A1": "phrases très courtes et isolées, vocabulaire limité au quotidien immédiat (se présenter, nommer des objets, chiffres, jours), présent uniquement, pas de subordination. Longueur du passage : 40-60 mots maximum. IMPORTANT : si le sujet est complexe, crée un dialogue simple entre deux personnes qui abordent ce sujet de façon très basique (ex: 'Tu connais Marie ? Elle est différente de moi.'). Ne jamais abandonner le sujet, toujours le relier même indirectement.",
+    "A2": "phrases simples reliées par 'et', 'mais', 'parce que', situations familières (achats, transports, famille), passé composé et futur proche. Longueur du passage : 60-90 mots. IMPORTANT : si le sujet est complexe, crée un dialogue ou une situation concrète qui l'illustre simplement. Reste toujours lié au sujet.",
+    "B1": "textes sur des sujets familiers (travail, voyages, actualité simple), connecteurs logiques, imparfait et conditionnel présent. Longueur du passage : 90-120 mots.",
+    "B2": "textes complexes sur des sujets abstraits ou sociaux, argumentation, subjonctif, vocabulaire soutenu. Longueur du passage : 130-160 mots.",
+    "C1": "textes littéraires ou journalistiques longs, nuances stylistiques fines, registres variés, implicite et sous-entendu. Longueur du passage : 160-200 mots.",
+    "C2": "maîtrise parfaite, textes abstraits ou spécialisés, ironie, jeux de mots, références culturelles profondes, syntaxe très complexe. Longueur du passage : 200-250 mots.",
+}
+
+explanation_instruction = "en français très simple, mots courants uniquement, phrases de moins de 10 mots, très encourageante et chaleureuse, avec beaucoup d'enthousiasme et de félicitations même si la réponse est fausse" if level in ["A1", "A2"] else "courte, bienveillante et légèrement espiègle"
+
 def get_system_qcm(level: str) -> str:
+    desc = LEVEL_DESC.get(level, "avancé")
     return f"""Tu es un professeur de FLE expert en DELF/DALF. Crée un exercice de compréhension écrite de niveau {level} à partir d'un sujet ou d'un texte.
+Niveau {level} signifie : {desc}.
 Réponds UNIQUEMENT avec un objet JSON valide, sans markdown ni backticks.
 Structure exacte :
-{{"passage":"texte authentique 130-160 mots en français niveau {level}","question":"question de compréhension {level}","options":{{"A":"option A","B":"option B","C":"option C","D":"option D"}},"answer":"A ou B ou C ou D","explanation":"explication courte et bienveillante, légèrement espiègle"}}
-Adapte le vocabulaire, la complexité syntaxique et les thèmes au niveau {level}."""
+{{"passage":"texte STRICTEMENT adapté au niveau {level}, longueur selon le niveau","question":"question de compréhension adaptée au niveau {level}","options":{{"A":"option A","B":"option B","C":"option C","D":"option D"}},"answer":"A ou B ou C ou D","explanation":"{explanation_instruction}"}}"""
 
 def get_system_vrai_faux(level: str) -> str:
+    desc = LEVEL_DESC.get(level, "avancé")
     return f"""Tu es un professeur de FLE expert en DELF/DALF. Crée un exercice Vrai/Faux de niveau {level}.
+Niveau {level} signifie : {desc}.
 Réponds UNIQUEMENT avec un objet JSON valide, sans markdown ni backticks.
 Structure exacte :
-{{"passage":"texte authentique 150-180 mots en français niveau {level}","statement":"une affirmation sur le texte, vraie ou fausse","answer":"vrai ou faux","justification":"l'idée du texte qui justifie la réponse","explanation":"explication bienveillante et légèrement espiègle"}}
-Adapte la difficulté au niveau {level}."""
+{{"passage":"texte STRICTEMENT adapté au niveau {level}, longueur selon le niveau","statement":"une affirmation sur le texte, vraie ou fausse, adaptée au niveau {level}","answer":"vrai ou faux","justification":"l'idée du texte qui justifie la réponse","explanation":"{explanation_instruction}"}}
+Adapte la complexité au niveau {level} : {desc}."""
 
 SYSTEM_EVALUATE = """Tu es un correcteur expert en DELF/DALF. Tu évalues la justification d'un apprenant pour un exercice Vrai/Faux.
 Réponds UNIQUEMENT avec un objet JSON valide, sans markdown ni backticks.
