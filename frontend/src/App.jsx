@@ -35,7 +35,7 @@ async function generate() {
     : (isUrl ? "/generate-vrai-faux-url" : "/generate-vrai-faux");
   const body = isUrl ? { url: value } : { keyword: value };
   try {
-    const res = await fetch(`http://localhost:8000${endpoint}`, {
+    const res = await fetch(`https://ouican.onrender.com${endpoint}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body)
@@ -83,7 +83,7 @@ async function generate() {
       ? (isUrl ? "/generate-from-url" : "/generate-exercise")
       : (isUrl ? "/generate-vrai-faux-url" : "/generate-vrai-faux");
     try {
-      const res = await fetch(`http://localhost:8000${endpoint}`, {
+      const res = await fetch(`https://ouican.onrender.com${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(isUrl ? { url: value } : { keyword: value })
