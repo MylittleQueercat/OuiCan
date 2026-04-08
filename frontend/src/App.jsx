@@ -1,5 +1,8 @@
-import { useState } from "react";
 import { ALL_CHIPS } from "./chips";
+import { useState, useEffect } from "react";
+import { supabase } from "./supabase";
+import Auth from "./Auth";
+import Profile from "./Profile";
 
 function shuffle(arr) {
   return [...arr].sort(() => Math.random() - 0.5);
@@ -20,6 +23,27 @@ export default function OuiCan() {
   const [score, setScore] = useState({ correct: 0, total: 0 });
   const [sessionKw, setSessionKw] = useState("");
   const [sessionSourceUrl, setSessionSourceUrl] = useState("");
+  const [user, setUser] = useState(null);
+  const [profile, setProfile] = useState(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      if (session?.user) loadProfile(session.user.id);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      if (session?.user) loadProfile(session.user.id);
+      else setProfile(null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+
+async function loadProfile(userId) {
+  const { data } = await supabase.from("profiles").select("nickname, level").eq("id", userId).single();
+  if (data?.nickname && data?.level) setProfile(data);
+}
 
 async function generate() {
   const isUrl = mode === "url";
@@ -33,7 +57,7 @@ async function generate() {
   const endpoint = randomType === "qcm"
     ? (isUrl ? "/generate-from-url" : "/generate-exercise")
     : (isUrl ? "/generate-vrai-faux-url" : "/generate-vrai-faux");
-  const body = isUrl ? { url: value } : { keyword: value };
+  const body = isUrl ? { url: value, level: profile.level } : { keyword: value, level: profile.level };
   try {
     const res = await fetch(`https://ouican.onrender.com${endpoint}`, {
       method: "POST",
@@ -86,7 +110,7 @@ async function generate() {
       const res = await fetch(`https://ouican.onrender.com${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(isUrl ? { url: value } : { keyword: value })
+        body: JSON.stringify(isUrl ? { url: value, level: profile.level } : { keyword: value, level: profile.level })
       });
       const text = await res.text();
       const data = JSON.parse(text);
@@ -125,6 +149,10 @@ async function generate() {
     feedback: { marginTop: 20, padding: "24px", borderRadius: "12px", backgroundColor: "#F8F8F8", borderLeft: "4px solid #123524", fontFamily: "'Libre Baskerville', serif", lineHeight: 1.7, color: "#444" },
   };
 
+  if (!user) return <Auth />;
+  if (!profile) return <Profile user={user} onSave={(p) => setProfile(p)} />;
+  
+
   return (
     <div style={s.container}>
       <div style={s.wrap}>
@@ -137,6 +165,19 @@ async function generate() {
             Le Français par la curiosité
           </span>
         </header>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+          <span style={{ fontSize: 14, color: "#666", fontFamily: "'Libre Baskerville', serif" }}>
+            Bonjour, <strong>{profile.nickname}</strong> · {profile.level}
+          </span>
+          <div style={{ display: "flex", gap: 12 }}>
+            <button onClick={() => setProfile(null)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#999" }}>
+              ⚙️ Profil
+            </button>
+            <button onClick={() => supabase.auth.signOut()} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#999" }}>
+              Déconnexion
+            </button>
+          </div>
+        </div>
 
         {phase === "input" && (
           <div style={s.card}>

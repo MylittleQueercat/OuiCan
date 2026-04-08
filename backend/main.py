@@ -29,17 +29,19 @@ client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 # ── Prompts ──────────────────────────────────────────────────────────────────
 
-SYSTEM_QCM = """Tu es un professeur de FLE expert en DELF/DALF. Crée un exercice de compréhension écrite B2 à partir d'un sujet ou d'un texte.
+def get_system_qcm(level: str) -> str:
+    return f"""Tu es un professeur de FLE expert en DELF/DALF. Crée un exercice de compréhension écrite de niveau {level} à partir d'un sujet ou d'un texte.
 Réponds UNIQUEMENT avec un objet JSON valide, sans markdown ni backticks.
 Structure exacte :
-{"passage":"texte authentique 130-160 mots en français niveau B2","question":"question de compréhension B2","options":{"A":"option A","B":"option B","C":"option C","D":"option D"},"answer":"A ou B ou C ou D","explanation":"explication courte et bienveillante, légèrement espiègle"}
-Le passage doit avoir vocabulaire soutenu, structures complexes, être culturellement ancré."""
+{{"passage":"texte authentique 130-160 mots en français niveau {level}","question":"question de compréhension {level}","options":{{"A":"option A","B":"option B","C":"option C","D":"option D"}},"answer":"A ou B ou C ou D","explanation":"explication courte et bienveillante, légèrement espiègle"}}
+Adapte le vocabulaire, la complexité syntaxique et les thèmes au niveau {level}."""
 
-SYSTEM_VRAI_FAUX = """Tu es un professeur de FLE expert en DELF/DALF. Crée un exercice Vrai/Faux/Justifiez de niveau B2.
+def get_system_vrai_faux(level: str) -> str:
+    return f"""Tu es un professeur de FLE expert en DELF/DALF. Crée un exercice Vrai/Faux de niveau {level}.
 Réponds UNIQUEMENT avec un objet JSON valide, sans markdown ni backticks.
 Structure exacte :
-{"passage":"texte authentique 150-180 mots en français niveau B2","statement":"une affirmation sur le texte, vraie ou fausse","answer":"vrai ou faux","justification":"la phrase ou l'idée du texte qui justifie la réponse (en langage naturel, pas une copie exacte)","explanation":"explication bienveillante et légèrement espiègle pour l'apprenant"}
-Le passage doit être riche, ambigu par endroits, pour que l'exercice soit vraiment challengeant."""
+{{"passage":"texte authentique 150-180 mots en français niveau {level}","statement":"une affirmation sur le texte, vraie ou fausse","answer":"vrai ou faux","justification":"l'idée du texte qui justifie la réponse","explanation":"explication bienveillante et légèrement espiègle"}}
+Adapte la difficulté au niveau {level}."""
 
 SYSTEM_EVALUATE = """Tu es un correcteur expert en DELF/DALF. Tu évalues la justification d'un apprenant pour un exercice Vrai/Faux.
 Réponds UNIQUEMENT avec un objet JSON valide, sans markdown ni backticks.
@@ -51,15 +53,19 @@ Critères : 2/2 = bonne reformulation de l'idée clé sans copier ; 1/2 = idée 
 
 class ExerciseRequest(BaseModel):
     keyword: str
+    level: str = "B1"
 
 class UrlRequest(BaseModel):
     url: str
+    level: str = "B1"
 
 class VraiFauxRequest(BaseModel):
     keyword: str
+    level: str = "B1"
 
 class UrlVraiFauxRequest(BaseModel):
     url: str
+    level: str = "B1"
 
 class EvaluateRequest(BaseModel):
     passage: str
@@ -132,7 +138,7 @@ def generate_exercise(req: ExerciseRequest):
     if not req.keyword.strip():
         raise HTTPException(status_code=400, detail="keyword cannot be empty")
     try:
-        result = call_groq(SYSTEM_QCM, f"Sujet : {req.keyword}")
+        result = call_groq(get_system_qcm(req.level), f"Sujet : {req.keyword}")
         return Response(content=orjson.dumps(result), media_type="application/json")
     except json.JSONDecodeError:
         raise HTTPException(status_code=500, detail="AI returned invalid JSON")
@@ -147,7 +153,7 @@ def generate_from_url(req: UrlRequest):
         raise HTTPException(status_code=400, detail="url cannot be empty")
     try:
         content = fetch_article(req.url)
-        result = call_groq(SYSTEM_QCM, f"Voici un article de presse. Crée un exercice DELF B2 basé sur ce texte :\n\n{content}")
+        result = call_groq(get_system_qcm(req.level), f"Voici un article...")
         return Response(content=orjson.dumps(result), media_type="application/json")
     except HTTPException:
         raise
@@ -163,7 +169,7 @@ def generate_vrai_faux(req: VraiFauxRequest):
     if not req.keyword.strip():
         raise HTTPException(status_code=400, detail="keyword cannot be empty")
     try:
-        result = call_groq(SYSTEM_VRAI_FAUX, f"Sujet : {req.keyword}")
+        result = call_groq(get_system_vrai_faux(req.level), f"Sujet : {req.keyword}")
         return Response(content=orjson.dumps(result), media_type="application/json")
     except json.JSONDecodeError:
         raise HTTPException(status_code=500, detail="AI returned invalid JSON")
@@ -178,7 +184,7 @@ def generate_vrai_faux_url(req: UrlVraiFauxRequest):
         raise HTTPException(status_code=400, detail="url cannot be empty")
     try:
         content = fetch_article(req.url)
-        result = call_groq(SYSTEM_VRAI_FAUX, f"Voici un article de presse. Crée un exercice Vrai/Faux/Justifiez basé sur ce texte :\n\n{content}")
+        result = call_groq(get_system_vrai_faux(req.level), f"Voici un article...")
         return Response(content=orjson.dumps(result), media_type="application/json")
     except HTTPException:
         raise
