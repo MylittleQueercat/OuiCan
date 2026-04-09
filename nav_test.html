@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  body { background: #F9F7F2; padding: 100px; display: flex; justify-content: center; }
+  
+  /* 模拟图 1 的核心组件 */
+  .nav-simulation {
+    width: 900px;
+    /* 1. 双横线设计：顶粗底细，拉开层次 */
+    border-top: 4px solid #1A1A1A;
+    border-bottom: 1px solid #AAA;
+    padding: 14px 0;
+    
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .nav-sim-item {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 3px; /* 重点：拉开间距产生呼吸感 */
+    text-transform: uppercase;
+    color: #1A1A1A;
+    display: flex;
+    align-items: center;
+  }
+
+  /* 2. 装饰符：代替生硬的斜杠或竖线 */
+  .fleuron {
+    color: #BBB;
+    margin: 0 25px;
+    font-size: 12px;
+  }
+
+  /* 3. 品牌色高亮：模仿图 1 的橙色，但用我们的深绿 */
+  .highlight {
+    color: #123524;
+  }
+</style>
+</head>
+<body>
+
+  <div class="nav-simulation">
+    <div class="nav-sim-item highlight">FLAMME 2</div>
+    <div class="fleuron">✦</div>
+    <div class="nav-sim-item">NIVEAU C1</div>
+    <div class="fleuron">✦</div>
+    <div class="nav-sim-item">PROFIL</div>
+    <div class="fleuron">✦</div>
+    <div class="nav-sim-item">DÉCONNEXION</div>
+  </div>
+
+</body>
+</html>
