@@ -424,7 +424,7 @@ useEffect(() => {
           <div onClick={() => setWordCard(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.3)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 100, padding: 20 }}>
             <div onClick={e => e.stopPropagation()} style={{ background: "#FFF", borderRadius: 16, padding: 24, width: "100%", maxWidth: 600 }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
-                <span style={{ fontSize: 22, fontWeight: 700, fontFamily: "'UnifrakturMaguntia', serif" }}>{wordCard.word}</span>
+                <span style={{ fontSize: 24, fontWeight: 700, fontFamily: "'Playfair Display', serif", color: "#123524" }}>{wordCard.word}</span>
                 <button onClick={() => setWordCard(null)} style={{ background: "none", border: "none", fontSize: 20 }}>✕</button>
               </div>
               {wordCard.loading ? "Déchiffrement..." : (

@@ -120,4 +120,27 @@ export const INJECTED_CSS = `
     text-align: justify;
     hyphens: auto;
   }
+
+  /* 强制生词卡片内部的所有文字回归现代字体 */
+  .word-card, 
+  [class*="modal"], 
+  [class*="popup"] {
+    font-family: 'Inter', sans-serif !important;
+  }
+
+  /* 单词标题可以优雅，但必须好认 */
+  .word-card h2, 
+  .word-card strong {
+    font-family: 'Playfair Display', serif !important;
+    font-weight: 700 !important;
+    letter-spacing: 0 !important;
+    text-transform: none !important;
+  }
+
+  /* 解释和例句 */
+  .word-card p, 
+  .word-card span {
+    font-family: 'Inter', sans-serif !important;
+    line-height: 1.5;
+    color: #333;
 `;
