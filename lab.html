@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>OuiCan Header Lab 3.0 专业精修版</title>
+    <link href="https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&family=Inter:wght@400;600;700;800&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #F9F7F2;
+            --brand-color: #123524;
+            /* 默认核心参数 */
+            --header-pt: 30px;
+            --header-pb: 20px;
+            --header-bt: 4px;
+            --header-bb: 1px;
+            --title-size: 88px;
+            --title-spacing: -2px;
+            --center-pad-l: 180px;
+            --tagline-size: 10px;
+            --tagline-space: 5px;
+            --tagline-mt: 4px;
+            --ear-width: 150px;
+            --ear-gap: 25px;
+            --ear-line-opacity: 0.1;
+            --ear-line-height: 40px;
+            --streak-size: 38px;
+            --streak-weight: 700;
+        }
+
+        body { background: #d1d5db; font-family: 'Inter', sans-serif; display: flex; justify-content: center; align-items: flex-start; padding-top: 50px; }
+
+        .preview-container {
+            background: var(--bg-color);
+            padding: 80px;
+            width: 850px;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.15);
+            border-radius: 4px;
+        }
+
+        /* --- 核心 Header 结构 --- */
+        .ouican-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: var(--header-bt) solid #1A1A1A;
+            border-bottom: var(--header-bb) solid #1A1A1A;
+            padding-top: var(--header-pt);
+            padding-bottom: var(--header-pb);
+        }
+
+        .header-center {
+            flex: 1;
+            text-align: center;
+            padding-left: var(--center-pad-l);
+        }
+
+        .header-center h1 {
+            font-family: 'UnifrakturMaguntia', serif;
+            font-size: var(--title-size);
+            letter-spacing: var(--title-spacing);
+            margin: 0;
+            line-height: 0.9;
+            color: var(--brand-color);
+            text-shadow: 1px 1px 0px rgba(0,0,0,0.1);
+        }
+
+        .header-tagline {
+            font-size: var(--tagline-size);
+            letter-spacing: var(--tagline-space);
+            text-transform: uppercase;
+            color: #333;
+            margin-top: var(--tagline-mt);
+            display: block;
+            font-weight: 600;
+        }
+
+        .header-ear-right {
+            width: var(--ear-width);
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: var(--ear-gap);
+            padding-left: 20px;
+            position: relative;
+        }
+
+        /* 独立的竖线，可控高度 */
+        .header-ear-right::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            width: 1px;
+            height: var(--ear-line-height);
+            background: rgba(0,0,0, var(--ear-line-opacity));
+        }
+
+        .ear-text-box {
+            font-size: 9px;
+            line-height: 1.3;
+            text-align: right;
+            color: #555;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .ear-streak-value {
+            font-family: 'Playfair Display', serif;
+            font-size: var(--streak-size);
+            font-weight: var(--streak-weight);
+            color: var(--brand-color);
+            line-height: 1;
+        }
+
+        /* --- UI 控制面板 --- */
+        .controls {
+            position: fixed;
+            left: 20px; top: 20px; bottom: 20px;
+            background: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            width: 320px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow-y: auto;
+            font-size: 11px;
+        }
+        h3 { margin-top: 0; color: #123524; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .section-title { background: #f0f0f0; padding: 4px 8px; margin: 15px 0 10px; font-weight: 800; text-transform: uppercase; }
+        .control-group { margin-bottom: 12px; }
+        label { display: block; margin-bottom: 4px; color: #666; }
+        .val { color: #123524; font-weight: bold; float: right; }
+        input[type=range] { width: 100%; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <div class="controls">
+        <h3>Header Lab 3.0 🧪</h3>
+        
+        <div class="section-title">布局与间距</div>
+        <div class="control-group">
+            <label>标题居中补偿 (Pad-L): <span class="val" id="v-pad">180px</span></label>
+            <input type="range" min="0" max="400" value="180" oninput="update('--center-pad-l', this.value + 'px', 'v-pad')">
+        </div>
+        <div class="control-group">
+            <label>整体内边距 (Top/Bottom): <span class="val" id="v-pt">30px</span></label>
+            <input type="range" min="10" max="80" value="30" oninput="update('--header-pt', this.value + 'px', 'v-pt'); update('--header-pb', (this.value-10) + 'px', '')">
+        </div>
+
+        <div class="section-title">线条设置</div>
+        <div class="control-group">
+            <label>顶部粗线厚度: <span class="val" id="v-bt">4px</span></label>
+            <input type="range" min="1" max="15" value="4" oninput="update('--header-bt', this.value + 'px', 'v-bt')">
+        </div>
+        <div class="control-group">
+            <label>底部细线厚度: <span class="val" id="v-bb">1px</span></label>
+            <input type="range" min="0" max="5" value="1" oninput="update('--header-bb', this.value + 'px', 'v-bb')">
+        </div>
+        <div class="control-group">
+            <label>竖线透明度: <span class="val" id="v-lo">0.1</span></label>
+            <input type="range" min="0" max="1" step="0.1" value="0.1" oninput="update('--ear-line-opacity', this.value, 'v-lo')">
+        </div>
+        <div class="control-group">
+            <label>竖线高度: <span class="val" id="v-lh">40px</span></label>
+            <input type="range" min="10" max="100" value="40" oninput="update('--ear-line-height', this.value + 'px', 'v-lh')">
+        </div>
+
+        <div class="section-title">文字微调</div>
+        <div class="control-group">
+            <label>主标题字号: <span class="val" id="v-ts">88px</span></label>
+            <input type="range" min="40" max="140" value="88" oninput="update('--title-size', this.value + 'px', 'v-ts')">
+        </div>
+        <div class="control-group">
+            <label>主标题字间距: <span class="val" id="v-tsp">-2px</span></label>
+            <input type="range" min="-10" max="10" value="-2" oninput="update('--title-spacing', this.value + 'px', 'v-tsp')">
+        </div>
+        <div class="control-group">
+            <label>副标题字号: <span class="val" id="v-tgs">10px</span></label>
+            <input type="range" min="8" max="16" value="10" oninput="update('--tagline-size', this.value + 'px', 'v-tgs')">
+        </div>
+        <div class="control-group">
+            <label>Streak 数字大小: <span class="val" id="v-ss">38px</span></label>
+            <input type="range" min="20" max="80" value="38" oninput="update('--streak-size', this.value + 'px', 'v-ss')">
+        </div>
+    </div>
+
+    <div class="preview-container">
+        <header class="ouican-header">
+            <div style="width: var(--ear-width);"></div>
+            <div class="header-center">
+                <h1>OuiCan</h1>
+                <span class="header-tagline">Le Français par la curiosité</span>
+            </div>
+            <div class="header-ear-right">
+                <div class="ear-text-box">
+                    JEUDI<br>9 AVRIL<br>2026
+                </div>
+                <div class="ear-streak-value">2</div>
+            </div>
+        </header>
+    </div>
+
+    <script>
+        function update(prop, val, labelId) {
+            document.documentElement.style.setProperty(prop, val);
+            if(labelId) document.getElementById(labelId).innerText = val;
+        }
+    </script>
+</body>
+</html>
