@@ -1,6 +1,6 @@
 # 📰 OuiCan: Le Français par la curiosité
 
-**OuiCan** is a high-end, editorial-style French learning platform available at **[ouican.vercel.app](https://www.google.com/search?q=https://ouican.vercel.app)**. It transforms the daily news into a sophisticated linguistic experience, combining vintage 20th-century newspaper aesthetics with modern AI-driven tools.
+**OuiCan** is a high-end, editorial-style French learning platform available at **https://ouican.pages.dev**. It transforms the daily news into a sophisticated linguistic experience, combining vintage 20th-century newspaper aesthetics with modern AI-driven tools.
 
 ## ✨ Key Features
 
